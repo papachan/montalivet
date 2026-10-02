@@ -56,7 +56,7 @@
            :scm       {:url                 github-url
                        :connection          (str "scm:git:" github-url ".git")
                        :developerConnection (str "scm:git:ssh:" scm-url)
-                       :tag                 "HEAD"} ;; you can use ("v" version) or a git (sha {})
+                       :tag                 (str "v" version)}
            :pom-data  [[:description "Clojure wrapper around jsoup for parsing and escaping HTML."]
                        [:url github-url]
                        [:developers
@@ -110,6 +110,5 @@
   (jar nil)
   (dd/deploy {:installer  :remote
               :artifact   (b/resolve-path output-file)
-              :pom-file   (b/pom-path {:lib lib :class-dir class-dir})
-              :repository "clojars"})
+              :pom-file   (b/pom-path {:lib lib :class-dir class-dir})})
   opts)

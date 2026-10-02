@@ -30,7 +30,7 @@
   <scm>
     <connection>scm:git:https://github.com/papachan/montalivet.git</connection>
     <developerConnection>scm:git:ssh:git@github.com:papachan/montalivet.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.1.0</tag>
     <url>https://github.com/papachan/montalivet</url>
   </scm>
   <description>Clojure wrapper around jsoup for parsing and escaping HTML.</description>

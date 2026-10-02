@@ -1,5 +1,7 @@
 # Montalivet
 
+[![Clojars Project](https://img.shields.io/clojars/v/io.github.papachan/montalivet.svg)](https://clojars.org/io.github.papachan/montalivet)
+
 A small Clojure wrapper around [jsoup](https://jsoup.org/), so you can parse
 HTML and escape text from Clojure without writing Java interop yourself.
 
@@ -16,19 +18,17 @@ HTML and escape text from Clojure without writing Java interop yourself.
 
 ## Installation
 
-Montalivet is not on Clojars yet. Until then, install it locally from a clone:
-
-```sh
-clojure -T:build install
-```
-
-Then add it to your `deps.edn`:
+Add it to your `deps.edn`:
 
 ```clj
 io.github.papachan/montalivet {:mvn/version "0.1.0"}
 ```
 
-It requires Clojure 1.12 and brings in `org.jsoup/jsoup`.
+Install it locally from a clone:
+
+```sh
+clojure -T:build install
+```
 
 ## Usage
 
@@ -109,6 +109,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and the [CHANGELOG](CHANGELOG.md).
 
 ## License
 
-Copyright 2025 papachan.
+Copyright &copy; 2026 papachan.
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
