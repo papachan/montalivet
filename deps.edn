@@ -4,7 +4,7 @@
 
  :aliases
  {:dev {:extra-paths ["dev"]
-        :extra-deps  {reloaded.repl/reloaded.repl {:mvn/version "0.2.4"}}}
+        :extra-deps  {org.clojure/tools.namespace {:mvn/version "1.5.1"}}}
 
   :repl {:extra-deps {nrepl/nrepl       {:mvn/version "1.7.0"}
                       cider/cider-nrepl {:mvn/version "0.62.2"}}

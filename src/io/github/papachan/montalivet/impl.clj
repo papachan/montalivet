@@ -1,4 +1,4 @@
-(ns io.github.papachan.montalivet.impl
+(ns ^:no-doc io.github.papachan.montalivet.impl
   "Jsoup interop. Not part of the public API."
   (:import
    (org.jsoup Jsoup)

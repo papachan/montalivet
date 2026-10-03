@@ -88,6 +88,10 @@ Jsoup only escapes characters the output charset cannot represent. With the
 default UTF-8, text such as `café` is returned unchanged, so this is not
 identical to Apache Commons Text's `escapeHtml4`.
 
+## Documentation
+
+You can find the documentation here: [API](https://github.com/papachan/montalivet/blob/main/API.md).
+
 ## Development
 
 Run the tests with [Kaocha](https://github.com/lambdaisland/kaocha):
