@@ -1,5 +1,5 @@
 # Table of contents
--  [`io.github.papachan.montalivet`](#io.github.papachan.montalivet)  - Clojure wrapper around jsoup.
+-  [`io.github.papachan.montalivet`](#io.github.papachan.montalivet)  - A Clojure library for parsing, sanitising and escaping HTML, built on jsoup.
     -  [`body-html`](#io.github.papachan.montalivet/body-html) - Returns the inner HTML of the document body as a string.
     -  [`clean`](#io.github.papachan.montalivet/clean) - Removes everything from the <code>html</code> string that is not allowed by a safelist, so that untrusted markup can be embedded safely.
     -  [`escape-html`](#io.github.papachan.montalivet/escape-html) - Escapes <code>s</code> so it is safe to embed as HTML text.
@@ -9,7 +9,7 @@
 # <a name="io.github.papachan.montalivet">io.github.papachan.montalivet</a>
 
 
-Clojure wrapper around jsoup.
+A Clojure library for parsing, sanitising and escaping HTML, built on jsoup.
 
 
 

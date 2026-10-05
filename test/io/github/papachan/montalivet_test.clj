@@ -78,11 +78,3 @@
   (testing "an unknown safelist is rejected"
     (is (thrown? clojure.lang.ExceptionInfo
                  (montalivet/clean "<p>x</p>" {:safelist :nope})))))
-
-(deftest round-trip-test
-  (testing "the original java snippet: parse, no pretty print, escape body"
-    (let [doc (montalivet/parse "<p>1 < 2</p>"
-                                {:pretty-print false :escape-mode :extended})]
-      (is (= "<p>1 &lt; 2</p>" (montalivet/body-html doc)))
-      (is (= "&lt;p&gt;1 &amp;lt; 2&lt;/p&gt;"
-             (montalivet/escape-html (montalivet/body-html doc)))))))

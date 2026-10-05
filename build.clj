@@ -4,7 +4,7 @@
             [clojure.string :as str]
             [deps-deploy.deps-deploy :as dd]))
 
-(def version "0.1.0")
+(def version "0.1.1")
 (def lib 'io.github.papachan/montalivet)
 (def lib-name 'montalivet)
 (def class-dir "target/classes")
@@ -18,8 +18,8 @@
   [{:keys [dir path] :or {dir "."}}]
   (-> {:command-args (cond-> ["git" "rev-parse" "HEAD"]
                        path (conj "--" path))
-       :dir (.getPath (b/resolve-path dir))
-       :out :capture}
+       :dir          (.getPath (b/resolve-path dir))
+       :out          :capture}
       b/process
       :out
       str/trim))
@@ -29,11 +29,11 @@
   (b/delete {:path "target"}))
 
 (defn test "Run all the tests." [opts]
-  (let [test-basis (b/create-basis {:aliases [:test]})
-        cmds       (b/java-command
-                    {:basis     test-basis
-                     :main      'clojure.main
-                     :main-args ["-m" "cognitect.test-runner"]})
+  (let [test-basis     (b/create-basis {:aliases [:test]})
+        cmds           (b/java-command
+                         {:basis     test-basis
+                          :main      'clojure.main
+                          :main-args ["-m" "cognitect.test-runner"]})
         {:keys [exit]} (b/process cmds)]
     (when-not (zero? exit) (throw (ex-info "Tests failed" {}))))
   opts)
@@ -57,7 +57,7 @@
                        :connection          (str "scm:git:" github-url ".git")
                        :developerConnection (str "scm:git:ssh:" scm-url)
                        :tag                 (str "v" version)}
-           :pom-data  [[:description "Clojure wrapper around jsoup for parsing and escaping HTML."]
+           :pom-data  [[:description "A Clojure library for parsing, sanitising and escaping HTML, built on jsoup."]
                        [:url github-url]
                        [:developers
                         [:developer
@@ -108,7 +108,7 @@
   (a Clojars deploy token)."
   [opts]
   (jar nil)
-  (dd/deploy {:installer  :remote
-              :artifact   (b/resolve-path output-file)
-              :pom-file   (b/pom-path {:lib lib :class-dir class-dir})})
+  (dd/deploy {:installer :remote
+              :artifact  (b/resolve-path output-file)
+              :pom-file  (b/pom-path {:lib lib :class-dir class-dir})})
   opts)

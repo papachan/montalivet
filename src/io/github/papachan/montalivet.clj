@@ -1,5 +1,5 @@
 (ns io.github.papachan.montalivet
-  "Clojure wrapper around jsoup."
+  "A Clojure library for parsing, sanitising and escaping HTML, built on jsoup."
   (:require [io.github.papachan.montalivet.impl :as impl])
   (:import (org.jsoup.nodes Document Document$OutputSettings)))
 
