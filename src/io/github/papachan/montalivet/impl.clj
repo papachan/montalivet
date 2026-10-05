@@ -2,7 +2,8 @@
   "Jsoup interop. Not part of the public API."
   (:import
    (org.jsoup Jsoup)
-   (org.jsoup.nodes Document Document$OutputSettings Entities Entities$EscapeMode)))
+   (org.jsoup.nodes Document Document$OutputSettings Entities Entities$EscapeMode)
+   (org.jsoup.safety Safelist)))
 
 (set! *warn-on-reflection* true)
 
@@ -47,3 +48,54 @@
 (defn output-settings
   ^Document$OutputSettings [^Document doc]
   (.outputSettings doc))
+
+(def safelists
+  {:none              (fn [] (Safelist/none))
+   :simple-text       (fn [] (Safelist/simpleText))
+   :basic             (fn [] (Safelist/basic))
+   :basic-with-images (fn [] (Safelist/basicWithImages))
+   :relaxed           (fn [] (Safelist/relaxed))})
+
+(defn- strings
+  ^"[Ljava.lang.String;" [coll]
+  (into-array String (map name coll)))
+
+(defn- tag-name
+  "Tag name for attribute rules. jsoup uses the literal \":all\" for
+  rules that apply to every tag, so `:all` maps to that."
+  ^String [tag]
+  (if (= :all tag) ":all" (name tag)))
+
+(defn safelist
+  "Builds a jsoup Safelist from the `:safelist` keyword and the
+  customisation options in `opts`. Always returns a new, mutable Safelist."
+  ^Safelist [{:keys [safelist add-tags remove-tags add-attributes
+                     remove-attributes preserve-relative-links]
+              :or   {safelist :basic}}]
+  (let [make (or (get safelists safelist)
+                 (throw (ex-info "Unknown safelist"
+                                 {:safelist safelist :valid (keys safelists)})))
+        ^Safelist sl (make)]
+    (when (seq add-tags)
+      (.addTags sl (strings add-tags)))
+    (when (seq remove-tags)
+      (.removeTags sl (strings remove-tags)))
+    (doseq [[tag attrs] add-attributes]
+      (.addAttributes sl (tag-name tag) (strings attrs)))
+    (doseq [[tag attrs] remove-attributes]
+      (.removeAttributes sl (tag-name tag) (strings attrs)))
+    (when preserve-relative-links
+      (.preserveRelativeLinks sl true))
+    sl))
+
+(defn clean
+  "Removes everything in `html` that is not allowed by the safelist
+  described in `opts`. Returns a string."
+  ^String [^String html {:keys [base-uri pretty-print]
+                         :or   {base-uri "" pretty-print false}
+                         :as   opts}]
+  (let [^Document$OutputSettings settings (Document$OutputSettings.)]
+    (.prettyPrint settings (boolean pretty-print))
+    (when-let [mode (:escape-mode opts)]
+      (.escapeMode settings (escape-mode mode)))
+    (Jsoup/clean html ^String base-uri (safelist opts) settings)))
