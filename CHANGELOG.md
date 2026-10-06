@@ -2,6 +2,12 @@
 
 This is a history of changes to [montalivet](https://github.com/papachan/montalivet).
 
+#### 0.1.2 - 2026-10-06
+
+* Added `select` and `select-one`, which find elements of a document with a
+  CSS selector.
+* Added `text`, `attr`, `attrs` and `outer-html` to read the matched elements.
+
 #### 0.1.1 - 2026-10-05
 
 * Added `clean`, which removes unsafe markup from an HTML string using a jsoup

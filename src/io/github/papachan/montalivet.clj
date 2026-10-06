@@ -1,7 +1,7 @@
 (ns io.github.papachan.montalivet
   "A Clojure library for parsing, sanitising and escaping HTML, built on jsoup."
   (:require [io.github.papachan.montalivet.impl :as impl])
-  (:import (org.jsoup.nodes Document Document$OutputSettings)))
+  (:import (org.jsoup.nodes Document Document$OutputSettings Element)))
 
 (set! *warn-on-reflection* true)
 
@@ -29,6 +29,44 @@
    (let [^Document doc (impl/parse "" (assoc opts :escape-mode (:escape-mode opts :base)))
          ^Document$OutputSettings settings (impl/output-settings doc)]
      (impl/escape-html s settings))))
+
+(defn select
+  "Returns a vector of the elements of `doc` that match the CSS selector
+  `query`, in document order. `doc` can be a Document or any element, in
+  which case only its descendants are searched. Returns an empty vector
+  when nothing matches.
+
+  See https://jsoup.org/cookbook/extracting-data/selector-syntax for the
+  selector syntax. An empty or invalid selector throws an exception."
+  [^Element doc query]
+  (impl/select doc query))
+
+(defn select-one
+  "Returns the first element of `doc` that matches the CSS selector `query`,
+  or nil when nothing matches."
+  ^Element [^Element doc query]
+  (impl/select-one doc query))
+
+(defn text
+  "Returns the combined, whitespace-normalised text of `el` and its children."
+  ^String [^Element el]
+  (impl/text el))
+
+(defn attr
+  "Returns the value of attribute `k` of `el`, or nil when it is absent.
+  `k` can be a string or a keyword."
+  ^String [^Element el k]
+  (impl/attr el (name k)))
+
+(defn attrs
+  "Returns the attributes of `el` as a map of keyword to string."
+  [^Element el]
+  (impl/attrs el))
+
+(defn outer-html
+  "Returns the markup of `el` itself, including its own tag."
+  ^String [^Element el]
+  (impl/outer-html el))
 
 (defn clean
   "Removes everything from the `html` string that is not allowed by a

@@ -2,7 +2,8 @@
   "Jsoup interop. Not part of the public API."
   (:import
    (org.jsoup Jsoup)
-   (org.jsoup.nodes Document Document$OutputSettings Entities Entities$EscapeMode)
+   (org.jsoup.nodes Attribute Document Document$OutputSettings Element Entities
+                    Entities$EscapeMode)
    (org.jsoup.safety Safelist)))
 
 (set! *warn-on-reflection* true)
@@ -40,6 +41,40 @@
 (defn body-html
   ^String [^Document doc]
   (.html (.body doc)))
+
+(defn select
+  "Elements of `el` (a Document or Element) matching the CSS `query`,
+  as a vector."
+  [^Element el ^String query]
+  (vec (.select el query)))
+
+(defn select-one
+  "First element of `el` matching the CSS `query`, or nil."
+  ^Element [^Element el ^String query]
+  (.selectFirst el query))
+
+(defn text
+  ^String [^Element el]
+  (.text el))
+
+(defn attr
+  "Value of attribute `k` on `el`, or nil when it is not present."
+  ^String [^Element el ^String k]
+  (when (.hasAttr el k)
+    (.attr el k)))
+
+(defn attrs
+  "Attributes of `el` as a map of keyword to string."
+  [^Element el]
+  (persistent!
+   (reduce (fn [m ^Attribute a]
+             (assoc! m (keyword (.getKey a)) (.getValue a)))
+           (transient {})
+           (.attributes el))))
+
+(defn outer-html
+  ^String [^Element el]
+  (.outerHtml el))
 
 (defn escape-html
   ^String [^String s ^Document$OutputSettings settings]

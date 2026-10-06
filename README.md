@@ -139,6 +139,56 @@ An unknown `:safelist` or `:escape-mode` throws an `ex-info` listing the
 valid values. The exact output can differ between jsoup versions, so check
 it against the version you use.
 
+### `select` and `select-one`
+
+```clj
+(m/select doc css-query)
+(m/select-one doc css-query)
+```
+
+Find elements of a parsed document with a
+[CSS selector](https://jsoup.org/cookbook/extracting-data/selector-syntax).
+`select` returns a vector of matching elements in document order (empty when
+nothing matches), and `select-one` returns the first match or `nil`. Both work
+on a document or on any element, in which case only its descendants are
+searched. An empty or invalid selector throws an exception.
+
+```clj
+(def doc (m/parse "<div id=\"a\" class=\"x y\">
+                     <a href=\"/1\" title=\"one\">One</a>
+                     <a href=\"/2\">Two</a>
+                   </div>"))
+
+(map m/text (m/select doc "a"))
+;; => ("One" "Two")
+
+(map #(m/attr % :href) (m/select doc "a[href]"))
+;; => ("/1" "/2")
+
+(m/select doc "table")
+;; => []
+
+(m/select-one doc "table")
+;; => nil
+```
+
+### Reading elements
+
+| Function            | Returns                                                   |
+|---------------------|-----------------------------------------------------------|
+| `(m/text el)`       | The element's text, with entities decoded.                |
+| `(m/attr el k)`     | The value of attribute `k` (string or keyword), or `nil`. |
+| `(m/attrs el)`      | All attributes as a map of keyword to string.             |
+| `(m/outer-html el)` | The element's own markup, including its tag.              |
+
+```clj
+(m/attrs (m/select-one doc "div"))
+;; => {:id "a", :class "x y"}
+
+(m/outer-html (m/select-one doc "a"))
+;; => "<a href=\"/1\" title=\"one\">One</a>"
+```
+
 ## Documentation
 
 You can find the documentation here: [API](https://github.com/papachan/montalivet/blob/main/API.md).

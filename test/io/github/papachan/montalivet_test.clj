@@ -42,6 +42,56 @@
       (is (= "&lt;p&gt;1 &amp;lt; 2&lt;/p&gt;"
              (montalivet/escape-html (montalivet/body-html doc)))))))
 
+(def page
+  (str "<html><body>"
+       "<div id=\"a\" class=\"x y\"><a href=\"/1\" title=\"one\">One</a><a href=\"/2\">Two</a></div>"
+       "<p>Hi &amp; bye</p>"
+       "</body></html>"))
+
+(deftest select-test
+  (let [doc (montalivet/parse page)]
+    (testing "returns a vector of the matching elements in document order"
+      (let [links (montalivet/select doc "a")]
+        (is (vector? links))
+        (is (= ["One" "Two"] (map montalivet/text links)))))
+    (testing "supports CSS attribute selectors"
+      (is (= ["/1" "/2"] (map #(montalivet/attr % :href) (montalivet/select doc "a[href]"))))
+      (is (= ["One"] (map montalivet/text (montalivet/select doc "a[title=one]")))))
+    (testing "an empty vector when nothing matches"
+      (is (= [] (montalivet/select doc "table"))))
+    (testing "can search inside an element"
+      (let [div (montalivet/select-one doc "div")]
+        (is (= ["One"] (map montalivet/text (montalivet/select div "a:first-child"))))
+        (is (= ["/1"]
+               (->> (montalivet/select div "a:first-child")
+                    (map #(montalivet/attr % :href)))))))
+    (testing "Expect an exception with an invalid or empty selector"
+      (is (thrown? Exception (montalivet/select doc "a[")))
+      (is (thrown? Exception (montalivet/select doc ""))))))
+
+(deftest select-one-test
+  (let [doc (montalivet/parse page)]
+    (testing "returns the first match"
+      (is (= "One" (montalivet/text (montalivet/select-one doc "a")))))
+    (testing "returns nil when nothing matches"
+      (is (nil? (montalivet/select-one doc "table"))))))
+
+(deftest element-readers-test
+  (let [doc (montalivet/parse page)
+        a   (montalivet/select-one doc "a")
+        div (montalivet/select-one doc "div")]
+    (testing "text decodes entities"
+      (is (= "Hi & bye" (montalivet/text (montalivet/select-one doc "p")))))
+    (testing "attr accepts a string or a keyword and gives nil when absent"
+      (is (= "one" (montalivet/attr a "title")))
+      (is (= "one" (montalivet/attr a :title)))
+      (is (nil? (montalivet/attr a :nope))))
+    (testing "attrs returns a keyword map"
+      (is (= {:id "a" :class "x y"} (montalivet/attrs div)))
+      (is (= {} (montalivet/attrs (montalivet/select-one doc "p")))))
+    (testing "outer-html includes the element's own tag"
+      (is (= "<a href=\"/1\" title=\"one\">One</a>" (montalivet/outer-html a))))))
+
 (deftest clean-test
   (testing "scripts and event handlers are removed with the default :basic safelist"
     (is (= "<p>Hi <b>there</b></p>"
