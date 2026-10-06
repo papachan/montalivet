@@ -4,7 +4,7 @@
   <packaging>jar</packaging>
   <groupId>io.github.papachan</groupId>
   <artifactId>montalivet</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <name>montalivet</name>
   <dependencies>
     <dependency>
@@ -30,7 +30,7 @@
   <scm>
     <connection>scm:git:https://github.com/papachan/montalivet.git</connection>
     <developerConnection>scm:git:ssh:git@github.com:papachan/montalivet.git</developerConnection>
-    <tag>v0.1.1</tag>
+    <tag>v0.1.2</tag>
     <url>https://github.com/papachan/montalivet</url>
   </scm>
   <description>A Clojure library for parsing, sanitising and escaping HTML, built on jsoup.</description>
