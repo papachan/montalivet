@@ -36,6 +36,12 @@ Install it locally from a clone:
 clojure -T:build install
 ```
 
+## Compatibility
+
+Montalivet runs on the JVM only. It is a wrapper around the Java library
+jsoup, and it is published as `.clj` files, so it **cannot be used from
+ClojureScript**.
+
 ## Usage
 
 Everything public is in `io.github.papachan.montalivet`.
