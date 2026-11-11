@@ -2,8 +2,8 @@
   "Jsoup interop. Not part of the public API."
   (:import
    (org.jsoup Jsoup)
-   (org.jsoup.nodes Attribute Document Document$OutputSettings Element Entities
-                    Entities$EscapeMode)
+   (org.jsoup.nodes Attribute Document Document$OutputSettings
+                    Element Entities Entities$EscapeMode)
    (org.jsoup.safety Safelist)))
 
 (set! *warn-on-reflection* true)
@@ -37,10 +37,11 @@
   UTF-8."
   ^String [charset]
   (cond
-    (nil? charset)                              nil
-    (string? charset)                           charset
+    (nil? charset)                               nil
+    (string? charset)                            charset
     (instance? java.nio.charset.Charset charset) (.name ^java.nio.charset.Charset charset)
-    :else (throw (ex-info "Invalid charset" {:charset charset}))))
+    :else
+    (throw (ex-info "Invalid charset" {:charset charset}))))
 
 (defn- parse-input
   "Parses `input` (a String, File, Path or InputStream) into a Document."
