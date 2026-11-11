@@ -64,9 +64,37 @@ Parses a full HTML document and returns a jsoup `Document`. `input` can be:
 (m/parse "<p>hi</p>")
 (m/parse (java.io.File. "page.html"))
 (m/parse (java.nio.file.Path/of "page.html" (make-array String 0)) {:charset "ISO-8859-1"})
-(with-open [in (clojure.java.io/input-stream "page.html")]
-  (m/parse in {:base-uri "https://example.com/"}))
 ```
+
+Now parse accepts input-streams:
+
+```
+(with-open [in (clojure.java.io/input-stream "links.html")]
+  (mapv m/text (m/select (m/parse in) "a")))
+;; => ["jsoup" "Clojure" "About & contact"]
+```
+
+Select now the correct charset with `parse` method:
+
+```
+(def latin1-file
+  (doto (java.io.File/createTempFile "montalivet" ".html")
+    (.deleteOnExit)
+    (spit "<p>café</p>" :encoding "ISO-8859-1")))
+
+(m/select-one (m/parse latin1-file {:charset "ISO-8859-1"}) "p")
+```
+
+If charset is incorrect you catch an Exception.
+
+```
+(try
+   (m/parse latin1-file {:charset :latin1})
+   (catch clojure.lang.ExceptionInfo e
+     [(ex-message e) (ex-data e)]))
+```
+
+
 
 | Option          | Default | Description                                   |
 |-----------------|---------|-----------------------------------------------|
@@ -101,6 +129,15 @@ Unlike `parse`, every element stays in the body:
 (m/body-html (m/parse html {:pretty-print false}))
 ;; => "<p>x</p>"   ; the title went to the head
 ```
+
+Works with hickory:
+
+
+```
+(require '[hickory.core :as h])
+(h/as-hickory (.body (m/parse-fragment "<a href=\"foo\">foo</a>")))
+```
+
 
 ### `body-html`
 
