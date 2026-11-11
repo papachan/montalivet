@@ -1,6 +1,6 @@
 {:paths ["src"]
  :deps  {org.clojure/clojure {:mvn/version "1.12.5"}
-         org.jsoup/jsoup     {:mvn/version "1.23.2"}}
+         org.jsoup/jsoup     {:mvn/version "1.24.1"}}
 
  :aliases
  {:dev {:extra-paths ["dev"]
