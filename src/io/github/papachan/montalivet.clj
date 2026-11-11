@@ -6,13 +6,36 @@
 (set! *warn-on-reflection* true)
 
 (defn parse
-  "Parses the `html` string into a jsoup Document.
+  "Parses `input` as a full HTML document and returns a jsoup Document.
+
+  `input` can be a String of HTML, a java.io.File, a java.nio.file.Path or
+  a java.io.InputStream. Any other type throws an exception. A stream is
+  read to its end but not closed.
 
   Options:
   - `:pretty-print` boolean, default true.
-  - `:escape-mode`  one of :base, :xhtml, :extended."
-  (^Document [html] (parse html {}))
-  (^Document [html opts] (impl/parse html opts)))
+  - `:escape-mode`  one of :base, :xhtml, :extended.
+  - `:base-uri`     base used to resolve relative links. Defaults to \"\"
+                    for a String or an InputStream, and to the location of
+                    the file for a File or a Path.
+  - `:charset`      charset of a File, Path or InputStream, as a string
+                    (\"ISO-8859-1\") or a java.nio.charset.Charset. When
+                    absent, it is detected from a byte-order mark or a
+                    `<meta>` tag, with UTF-8 as the fallback. Ignored for
+                    a String."
+  (^Document [input] (parse input {}))
+  (^Document [input opts] (impl/parse input opts)))
+
+(defn parse-fragment
+  "Parses the `html` string as a fragment of a document body, and returns
+  a jsoup Document whose body holds the fragment.
+
+  Unlike `parse`, every element stays in the body: `parse` moves elements
+  such as `<title>` or `<meta>` to the head.
+
+  Options: `:pretty-print`, `:escape-mode` and `:base-uri`, as in `parse`."
+  (^Document [html] (parse-fragment html {}))
+  (^Document [html opts] (impl/parse-fragment html opts)))
 
 (defn body-html
   "Returns the inner HTML of the document body as a string."

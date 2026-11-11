@@ -31,12 +31,64 @@
       (.escapeMode settings (escape-mode escape-mode-key))))
   doc)
 
+(defn- charset-name
+  "Name of `charset` (a string, a java.nio.charset.Charset or nil). nil
+  lets jsoup detect the charset from a BOM or a meta tag, falling back to
+  UTF-8."
+  ^String [charset]
+  (cond
+    (nil? charset)                              nil
+    (string? charset)                           charset
+    (instance? java.nio.charset.Charset charset) (.name ^java.nio.charset.Charset charset)
+    :else (throw (ex-info "Invalid charset" {:charset charset}))))
+
+(defn- parse-input
+  "Parses `input` (a String, File, Path or InputStream) into a Document."
+  ^Document [input {:keys [base-uri charset]}]
+  (let [cs               (charset-name charset)
+        ^String base-uri base-uri
+        ^String base     (or base-uri "")]
+    (cond
+      (string? input)
+      (Jsoup/parse ^String input base)
+
+      ;; Without a base URI, jsoup uses the location of the file.
+      (instance? java.io.File input)
+      (if base-uri
+        (Jsoup/parse ^java.io.File input cs base-uri)
+        (Jsoup/parse ^java.io.File input cs))
+
+      (instance? java.nio.file.Path input)
+      (if base-uri
+        (Jsoup/parse ^java.nio.file.Path input cs base-uri)
+        (Jsoup/parse ^java.nio.file.Path input cs))
+
+      (instance? java.io.InputStream input)
+      (Jsoup/parse ^java.io.InputStream input cs base)
+
+      :else
+      (throw (ex-info "Invalid input for parse"
+                      {:type  (type input)
+                       :valid '[String java.io.File java.nio.file.Path
+                                java.io.InputStream]})))))
+
+(defn- output-opts [opts]
+  (-> opts
+      (select-keys [:pretty-print])
+      (assoc :escape-mode-key (:escape-mode opts))))
+
 (defn parse
-  ^Document [^String html opts]
-  (apply-output-settings! (Jsoup/parse html)
-                          (-> opts
-                              (select-keys [:pretty-print])
-                              (assoc :escape-mode-key (:escape-mode opts)))))
+  ^Document [input opts]
+  (apply-output-settings! (parse-input input opts) (output-opts opts)))
+
+(defn parse-fragment
+  ^Document [html {:keys [base-uri] :as opts}]
+  (when-not (string? html)
+    (throw (ex-info "Invalid input for parse-fragment"
+                    {:type (type html) :valid '[String]})))
+  (let [^String base (or base-uri "")]
+    (apply-output-settings! (Jsoup/parseBodyFragment ^String html base)
+                            (output-opts opts))))
 
 (defn body-html
   ^String [^Document doc]

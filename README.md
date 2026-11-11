@@ -27,7 +27,7 @@ Java interop yourself.
 Add it to your `deps.edn`:
 
 ```clj
-io.github.papachan/montalivet {:mvn/version "0.1.2"}
+io.github.papachan/montalivet {:mvn/version "0.1.3"}
 ```
 
 Install it locally from a clone:
@@ -49,18 +49,58 @@ Everything public is in `io.github.papachan.montalivet`.
 ### `parse`
 
 ```clj
-(m/parse html)
-(m/parse html opts)
+(m/parse input)
+(m/parse input opts)
 ```
 
-Parses an HTML string and returns a jsoup `Document`.
+Parses a full HTML document and returns a jsoup `Document`. `input` can be:
+
+- a `String` of HTML,
+- a `java.io.File`,
+- a `java.nio.file.Path`,
+- a `java.io.InputStream` (read to its end, but not closed).
+
+```clj
+(m/parse "<p>hi</p>")
+(m/parse (java.io.File. "page.html"))
+(m/parse (java.nio.file.Path/of "page.html" (make-array String 0)) {:charset "ISO-8859-1"})
+(with-open [in (clojure.java.io/input-stream "page.html")]
+  (m/parse in {:base-uri "https://example.com/"}))
+```
 
 | Option          | Default | Description                                   |
 |-----------------|---------|-----------------------------------------------|
 | `:pretty-print` | `true`  | Reformat the output when the document is rendered. |
 | `:escape-mode`  | jsoup's default | `:base`, `:xhtml` or `:extended`.     |
+| `:base-uri`     | `""`, or the file's location for a `File` or `Path` | Base used to resolve relative links. |
+| `:charset`      | detected | Charset of a `File`, `Path` or `InputStream`: a string such as `"ISO-8859-1"`, or a `java.nio.charset.Charset`. When absent, jsoup reads it from a byte-order mark or a `<meta>` tag, and falls back to UTF-8. Ignored for a `String`. |
 
-An unknown `:escape-mode` throws an `ex-info` listing the valid modes.
+An unknown `:escape-mode`, an invalid `:charset` or any other type of `input`
+throws an `ex-info`.
+
+### `parse-fragment`
+
+```clj
+(m/parse-fragment html)
+(m/parse-fragment html opts)
+```
+
+Parses an HTML string as a fragment of a document body. Returns a jsoup
+`Document` whose body holds the fragment, so `body-html` and `select` work on
+it. Takes the `:pretty-print`, `:escape-mode` and `:base-uri` options of
+`parse`.
+
+Unlike `parse`, every element stays in the body:
+
+```clj
+(def html "<title>t</title><p>x</p>")
+
+(m/body-html (m/parse-fragment html {:pretty-print false}))
+;; => "<title>t</title><p>x</p>"
+
+(m/body-html (m/parse html {:pretty-print false}))
+;; => "<p>x</p>"   ; the title went to the head
+```
 
 ### `body-html`
 
@@ -213,7 +253,9 @@ Other tasks:
 clojure -T:build jar        # build target/montalivet-<version>.jar and pom.xml
 clojure -T:build uberjar    # standalone jar with all dependencies
 clojure -T:build install    # install into ~/.m2
-clojure -M:clj-kondo --lint src test build.clj dev
+clojure -M:clj-kondo --lint src test build.clj
+clojure -M:format-check
+
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the [CHANGELOG](CHANGELOG.md).
