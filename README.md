@@ -44,8 +44,6 @@ ClojureScript**.
 
 ## Usage
 
-Everything public is in `io.github.papachan.montalivet`.
-
 ### `parse`
 
 ```clj
@@ -66,26 +64,26 @@ Parses a full HTML document and returns a jsoup `Document`. `input` can be:
 (m/parse (java.nio.file.Path/of "page.html" (make-array String 0)) {:charset "ISO-8859-1"})
 ```
 
-Now parse accepts input-streams:
+`parse` accepts input-streams:
 
-```
+```clj
 (with-open [in (clojure.java.io/input-stream "links.html")]
   (mapv m/text (m/select (m/parse in) "a")))
 ;; => ["jsoup" "Clojure" "About & contact"]
 ```
 
-Select now the correct charset with `parse` method:
+You can select the correct charset with `parse` method:
 
 ```
 (def latin1-file
   (doto (java.io.File/createTempFile "montalivet" ".html")
     (.deleteOnExit)
-    (spit "<p>café</p>" :encoding "ISO-8859-1")))
+    (spit "<p>cafï¿½</p>" :encoding "ISO-8859-1")))
 
 (m/select-one (m/parse latin1-file {:charset "ISO-8859-1"}) "p")
 ```
 
-If charset is incorrect you catch an Exception.
+If charset is incorrect you can catch an Exception.
 
 ```
 (try
@@ -105,6 +103,7 @@ If charset is incorrect you catch an Exception.
 
 An unknown `:escape-mode`, an invalid `:charset` or any other type of `input`
 throws an `ex-info`.
+
 
 ### `parse-fragment`
 
@@ -130,8 +129,7 @@ Unlike `parse`, every element stays in the body:
 ;; => "<p>x</p>"   ; the title went to the head
 ```
 
-Works with hickory:
-
+Use it as an hickory-format data structure.
 
 ```
 (require '[hickory.core :as h])
