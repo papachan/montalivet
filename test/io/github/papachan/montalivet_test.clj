@@ -2,7 +2,10 @@
   (:require
    [clojure.test :refer [deftest is testing]]
    [io.github.papachan.montalivet :as montalivet])
-  (:import (org.jsoup.nodes Document)))
+  (:import (java.io ByteArrayInputStream File)
+           (java.nio.charset StandardCharsets)
+           (java.nio.file Files)
+           (org.jsoup.nodes Document)))
 
 (deftest parse-test
   (testing "returns a jsoup Document"
@@ -10,6 +13,77 @@
   (testing "unknown escape mode is rejected"
     (is (thrown? clojure.lang.ExceptionInfo
                  (montalivet/parse "<p>hi</p>" {:escape-mode :nope})))))
+
+(defn- temp-html
+  "Writes `html` to a temporary file with `charset` and returns the File."
+  ^File [^String html ^String charset]
+  (let [f (File/createTempFile "montalivet" ".html")]
+    (.deleteOnExit f)
+    (Files/write (.toPath f) (.getBytes html charset)
+                 ^"[Ljava.nio.file.OpenOption;" (make-array java.nio.file.OpenOption 0))
+    f))
+
+(deftest parse-input-test
+  (let [html "<html><body><p>café</p><a href=\"/a\">l</a></body></html>"
+        p    #(montalivet/text (montalivet/select-one % "p"))]
+    (testing "a File, a Path and an InputStream give the same document as a String"
+      (let [f (temp-html html "UTF-8")]
+        (is (= "café" (p (montalivet/parse html))))
+        (is (= "café" (p (montalivet/parse f))))
+        (is (= "café" (p (montalivet/parse (.toPath f)))))
+        (is (= "café" (p (montalivet/parse (ByteArrayInputStream. (.getBytes html "UTF-8"))))))))
+    (testing ":charset decodes a File, a Path and an InputStream"
+      (let [f (temp-html html "ISO-8859-1")]
+        (is (= "café" (p (montalivet/parse f {:charset "ISO-8859-1"}))))
+        (is (= "café" (p (montalivet/parse (.toPath f) {:charset StandardCharsets/ISO_8859_1}))))
+        (is (= "café" (p (montalivet/parse (ByteArrayInputStream. (.getBytes html "ISO-8859-1"))
+                                                {:charset "ISO-8859-1"}))))
+        (is (not= "café" (p (montalivet/parse f))))))
+    (testing "without :charset, the charset of a meta tag is used"
+      (let [f (temp-html (str "<html><head><meta charset=\"ISO-8859-1\"></head>"
+                              "<body><p>café</p></body></html>")
+                         "ISO-8859-1")]
+        (is (= "café" (p (montalivet/parse f))))))
+    (testing "the output options apply to every input type"
+      (is (= "<p>café</p><a href=\"/a\">l</a>"
+             (montalivet/body-html (montalivet/parse (temp-html html "UTF-8") {:pretty-print false})))))
+    (testing ":base-uri resolves relative links"
+      (let [href #(.absUrl (montalivet/select-one % "a") "href")
+            opts {:base-uri "https://example.com/"}]
+        (is (= "" (href (montalivet/parse html))))
+        (is (= "https://example.com/a" (href (montalivet/parse html opts))))
+        (is (= "https://example.com/a" (href (montalivet/parse (temp-html html "UTF-8") opts))))
+        (is (= "https://example.com/a" (href (montalivet/parse (.toPath (temp-html html "UTF-8")) opts))))
+        (is (= "https://example.com/a"
+               (href (montalivet/parse (ByteArrayInputStream. (.getBytes html "UTF-8")) opts))))))
+    (testing "other input types and charsets are rejected"
+      (is (thrown? clojure.lang.ExceptionInfo (montalivet/parse nil)))
+      (is (thrown? clojure.lang.ExceptionInfo (montalivet/parse 42)))
+      (is (thrown? clojure.lang.ExceptionInfo (montalivet/parse (.getBytes html "UTF-8"))))
+      (is (thrown? clojure.lang.ExceptionInfo
+                   (montalivet/parse (temp-html html "UTF-8") {:charset :utf-8}))))))
+
+(deftest parse-fragment-test
+  (testing "returns a Document whose body holds the fragment"
+    (let [doc (montalivet/parse-fragment "<b>a</b><i>b</i>" {:pretty-print false})]
+      (is (instance? Document doc))
+      (is (= "<b>a</b><i>b</i>" (montalivet/body-html doc)))))
+  (testing "head elements stay in the body, unlike with parse"
+    (let [html "<title>t</title><p>x</p>"]
+      (is (= html (montalivet/body-html (montalivet/parse-fragment html {:pretty-print false}))))
+      (is (= "<p>x</p>" (montalivet/body-html (montalivet/parse html {:pretty-print false}))))))
+  (testing "takes the :escape-mode and :base-uri options"
+    (is (= "a&#xa0;b"
+           (montalivet/body-html (montalivet/parse-fragment "a b" {:pretty-print false
+                                                                       :escape-mode  :xhtml}))))
+    (is (= "https://example.com/a"
+           (-> (montalivet/parse-fragment "<a href=\"/a\">l</a>" {:base-uri "https://example.com/"})
+               (montalivet/select-one "a")
+               (.absUrl "href")))))
+  (testing "only a string is accepted"
+    (is (thrown? clojure.lang.ExceptionInfo (montalivet/parse-fragment nil)))
+    (is (thrown? clojure.lang.ExceptionInfo
+                 (montalivet/parse-fragment (File. "x.html"))))))
 
 (deftest body-html-test
   (testing "without pretty print the markup is untouched"

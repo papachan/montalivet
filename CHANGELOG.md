@@ -2,6 +2,16 @@
 
 This is a history of changes to [montalivet](https://github.com/papachan/montalivet).
 
+#### 0.1.3 - 2026-11-11
+
+* `parse` now accepts a `java.io.File`, a `java.nio.file.Path` or a
+  `java.io.InputStream` as well as a string. Any other input throws an
+  `ex-info`.
+* Added the `:base-uri` and `:charset` options to `parse`.
+* Added `parse-fragment`, which parses a string as a fragment of a document
+  body.
+* Updated jsoup from 1.23.2 to 1.24.1.
+
 #### 0.1.2 - 2026-10-06
 
 * Added `select` and `select-one`, which find elements of a document with a

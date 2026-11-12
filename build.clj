@@ -4,7 +4,7 @@
             [clojure.string :as str]
             [deps-deploy.deps-deploy :as dd]))
 
-(def version "0.1.2")
+(def version "0.1.3")
 (def lib 'io.github.papachan/montalivet)
 (def lib-name 'montalivet)
 (def class-dir "target/classes")
