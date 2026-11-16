@@ -1,5 +1,8 @@
 (ns ^:no-doc io.github.papachan.montalivet.impl
   "Jsoup interop. Not part of the public API."
+  (:require
+   [clojure.edn :as edn]
+   [clojure.java.io :as io])
   (:import
    (org.jsoup Jsoup)
    (org.jsoup.nodes Attribute Document Document$OutputSettings
@@ -7,6 +10,29 @@
    (org.jsoup.safety Safelist)))
 
 (set! *warn-on-reflection* true)
+
+(def version
+  "Version of montalivet, read from the version.edn resource. build.clj
+  reads the same file."
+  (delay
+    (some-> (io/resource "io/github/papachan/montalivet/version.edn")
+            slurp
+            edn/read-string)))
+
+(defn- pom-version
+  "Version in the Maven pom.properties of `path` on the classpath, or nil."
+  [^String path]
+  (when-let [res (io/resource path)]
+    (with-open [in (io/input-stream res)]
+      (.getProperty (doto (java.util.Properties.) (.load in)) "version"))))
+
+(def jsoup-version
+  "Version of the jsoup jar on the classpath. The jar manifest is tried
+  first, then the Maven metadata, which is still there when the manifest is
+  lost in an uberjar."
+  (delay
+    (or (some-> (.getPackage Jsoup) .getImplementationVersion)
+        (pom-version "META-INF/maven/org.jsoup/jsoup/pom.properties"))))
 
 (def escape-modes
   {:base     Entities$EscapeMode/base

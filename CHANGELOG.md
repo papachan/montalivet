@@ -10,6 +10,8 @@ This is a history of changes to [montalivet](https://github.com/papachan/montali
 * Added the `:base-uri` and `:charset` options to `parse`.
 * Added `parse-fragment`, which parses a string as a fragment of a document
   body.
+* Added `version`, which returns the version of montalivet, and
+  `jsoup-version`, which returns the version of jsoup found on the classpath.
 * Updated jsoup from 1.23.2 to 1.24.1.
 
 #### 0.1.2 - 2026-10-06

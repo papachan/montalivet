@@ -7,6 +7,16 @@
            (java.nio.file Files)
            (org.jsoup.nodes Document)))
 
+(deftest version-test
+  (testing "version is the content of the version.edn resource"
+    (is (re-matches #"\d+\.\d+\.\d+.*" (montalivet/version)))
+    (is (= (montalivet/version)
+           (read-string (slurp "resources/io/github/papachan/montalivet/version.edn")))))
+  (testing "jsoup-version is the version of jsoup in deps.edn"
+    (is (= (montalivet/jsoup-version)
+           (get-in (read-string (slurp "deps.edn"))
+                   [:deps 'org.jsoup/jsoup :mvn/version])))))
+
 (deftest parse-test
   (testing "returns a jsoup Document"
     (is (instance? Document (montalivet/parse "<p>hi</p>"))))

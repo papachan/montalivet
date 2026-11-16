@@ -5,6 +5,19 @@
 
 (set! *warn-on-reflection* true)
 
+(defn version
+  "Returns the version of montalivet as a string, e.g. \"0.1.3\"."
+  ^String []
+  @impl/version)
+
+(defn jsoup-version
+  "Returns the version of the jsoup library found on the classpath, as a
+  string. It can differ from the version montalivet was built with when
+  another dependency brings its own jsoup. The output of `clean` and
+  `escape-html` can change between jsoup versions."
+  ^String []
+  @impl/jsoup-version)
+
 (defn parse
   "Parses `input` as a full HTML document and returns a jsoup Document.
 

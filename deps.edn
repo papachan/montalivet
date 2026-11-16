@@ -1,4 +1,4 @@
-{:paths ["src"]
+{:paths ["src" "resources"]
  :deps  {org.clojure/clojure {:mvn/version "1.12.5"}
          org.jsoup/jsoup     {:mvn/version "1.24.1"}}
 
