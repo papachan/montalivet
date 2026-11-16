@@ -1,12 +1,38 @@
 (ns ^:no-doc io.github.papachan.montalivet.impl
   "Jsoup interop. Not part of the public API."
+  (:require
+   [clojure.edn :as edn]
+   [clojure.java.io :as io])
   (:import
    (org.jsoup Jsoup)
-   (org.jsoup.nodes Attribute Document Document$OutputSettings Element Entities
-                    Entities$EscapeMode)
+   (org.jsoup.nodes Attribute Document Document$OutputSettings
+                    Element Entities Entities$EscapeMode)
    (org.jsoup.safety Safelist)))
 
 (set! *warn-on-reflection* true)
+
+(def version
+  "Version of montalivet, read from the version.edn resource. build.clj
+  reads the same file."
+  (delay
+    (some-> (io/resource "io/github/papachan/montalivet/version.edn")
+            slurp
+            edn/read-string)))
+
+(defn- pom-version
+  "Version in the Maven pom.properties of `path` on the classpath, or nil."
+  [^String path]
+  (when-let [res (io/resource path)]
+    (with-open [in (io/input-stream res)]
+      (.getProperty (doto (java.util.Properties.) (.load in)) "version"))))
+
+(def jsoup-version
+  "Version of the jsoup jar on the classpath. The jar manifest is tried
+  first, then the Maven metadata, which is still there when the manifest is
+  lost in an uberjar."
+  (delay
+    (or (some-> (.getPackage Jsoup) .getImplementationVersion)
+        (pom-version "META-INF/maven/org.jsoup/jsoup/pom.properties"))))
 
 (def escape-modes
   {:base     Entities$EscapeMode/base
@@ -31,12 +57,65 @@
       (.escapeMode settings (escape-mode escape-mode-key))))
   doc)
 
+(defn- charset-name
+  "Name of `charset` (a string, a java.nio.charset.Charset or nil). nil
+  lets jsoup detect the charset from a BOM or a meta tag, falling back to
+  UTF-8."
+  ^String [charset]
+  (cond
+    (nil? charset)                               nil
+    (string? charset)                            charset
+    (instance? java.nio.charset.Charset charset) (.name ^java.nio.charset.Charset charset)
+    :else
+    (throw (ex-info "Invalid charset" {:charset charset}))))
+
+(defn- parse-input
+  "Parses `input` (a String, File, Path or InputStream) into a Document."
+  ^Document [input {:keys [base-uri charset]}]
+  (let [cs               (charset-name charset)
+        ^String base-uri base-uri
+        ^String base     (or base-uri "")]
+    (cond
+      (string? input)
+      (Jsoup/parse ^String input base)
+
+      ;; Without a base URI, jsoup uses the location of the file.
+      (instance? java.io.File input)
+      (if base-uri
+        (Jsoup/parse ^java.io.File input cs base-uri)
+        (Jsoup/parse ^java.io.File input cs))
+
+      (instance? java.nio.file.Path input)
+      (if base-uri
+        (Jsoup/parse ^java.nio.file.Path input cs base-uri)
+        (Jsoup/parse ^java.nio.file.Path input cs))
+
+      (instance? java.io.InputStream input)
+      (Jsoup/parse ^java.io.InputStream input cs base)
+
+      :else
+      (throw (ex-info "Invalid input for parse"
+                      {:type  (type input)
+                       :valid '[String java.io.File java.nio.file.Path
+                                java.io.InputStream]})))))
+
+(defn- output-opts [opts]
+  (-> opts
+      (select-keys [:pretty-print])
+      (assoc :escape-mode-key (:escape-mode opts))))
+
 (defn parse
-  ^Document [^String html opts]
-  (apply-output-settings! (Jsoup/parse html)
-                          (-> opts
-                              (select-keys [:pretty-print])
-                              (assoc :escape-mode-key (:escape-mode opts)))))
+  ^Document [input opts]
+  (apply-output-settings! (parse-input input opts) (output-opts opts)))
+
+(defn parse-fragment
+  ^Document [html {:keys [base-uri] :as opts}]
+  (when-not (string? html)
+    (throw (ex-info "Invalid input for parse-fragment"
+                    {:type (type html) :valid '[String]})))
+  (let [^String base (or base-uri "")]
+    (apply-output-settings! (Jsoup/parseBodyFragment ^String html base)
+                            (output-opts opts))))
 
 (defn body-html
   ^String [^Document doc]

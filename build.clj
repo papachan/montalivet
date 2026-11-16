@@ -1,10 +1,13 @@
 (ns build
   (:refer-clojure :exclude [test])
-  (:require [clojure.tools.build.api :as b]
+  (:require [clojure.edn :as edn]
+            [clojure.tools.build.api :as b]
             [clojure.string :as str]
             [deps-deploy.deps-deploy :as dd]))
 
-(def version "0.1.2")
+(def version
+  (edn/read-string (slurp "resources/io/github/papachan/montalivet/version.edn")))
+
 (def lib 'io.github.papachan/montalivet)
 (def lib-name 'montalivet)
 (def class-dir "target/classes")
