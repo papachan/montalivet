@@ -74,7 +74,7 @@ Parses a full HTML document and returns a jsoup `Document`. `input` can be:
 
 You can select the correct charset with `parse` method:
 
-```
+```clj
 (def latin1-file
   (doto (java.io.File/createTempFile "montalivet" ".html")
     (.deleteOnExit)
@@ -85,13 +85,12 @@ You can select the correct charset with `parse` method:
 
 If charset is incorrect you can catch an Exception.
 
-```
+```clj
 (try
    (m/parse latin1-file {:charset :latin1})
    (catch clojure.lang.ExceptionInfo e
      [(ex-message e) (ex-data e)]))
 ```
-
 
 
 | Option          | Default | Description                                   |
