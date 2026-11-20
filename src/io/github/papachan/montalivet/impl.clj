@@ -7,6 +7,7 @@
    (org.jsoup Jsoup)
    (org.jsoup.nodes Attribute Document Document$OutputSettings
                     Element Entities Entities$EscapeMode)
+   (org.jsoup.parser Parser)
    (org.jsoup.safety Safelist)))
 
 (set! *warn-on-reflection* true)
@@ -142,6 +143,17 @@
   (when (.hasAttr el k)
     (.attr el k)))
 
+(defn abs-url
+  "Absolute URL of attribute `k` on `el`, or nil when the attribute is
+  absent or cannot be made absolute. jsoup returns \"\" in both cases."
+  ^String [^Element el ^String k]
+  (not-empty (.absUrl el k)))
+
+(defn base-uri
+  "Base URI of `el`, or nil when it has none. jsoup returns \"\" then."
+  ^String [^Element el]
+  (not-empty (.baseUri el)))
+
 (defn attrs
   "Attributes of `el` as a map of keyword to string."
   [^Element el]
@@ -158,6 +170,10 @@
 (defn escape-html
   ^String [^String s ^Document$OutputSettings settings]
   (Entities/escape s settings))
+
+(defn unescape-html
+  ^String [^String s {:keys [in-attribute]}]
+  (Parser/unescapeEntities s (boolean in-attribute)))
 
 (defn output-settings
   ^Document$OutputSettings [^Document doc]
@@ -213,3 +229,9 @@
     (when-let [mode (:escape-mode opts)]
       (.escapeMode settings (escape-mode mode)))
     (Jsoup/clean html ^String base-uri (safelist opts) settings)))
+
+(defn valid?
+  "True when `html` contains nothing that the safelist described in `opts`
+  would remove."
+  [^String html opts]
+  (Jsoup/isValid html (safelist opts)))
