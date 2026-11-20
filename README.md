@@ -179,6 +179,28 @@ Jsoup only escapes characters the output charset cannot represent. With the
 default UTF-8, text such as `café` is returned unchanged, so this is not
 identical to Apache Commons Text's `escapeHtml4`.
 
+### `unescape-html`
+
+```clj
+(m/unescape-html s)
+(m/unescape-html s opts)
+```
+
+Decodes HTML entities: named (`&amp;`), decimal (`&#66;`) and hexadecimal
+(`&#x41;`). Unknown entities are left as they are. It reverses `escape-html`.
+
+```clj
+(m/unescape-html "a &lt; b &amp; c &#x41;")
+;; => "a < b & c A"
+
+(m/unescape-html (m/escape-html "<b>a & b</b>"))
+;; => "<b>a & b</b>"
+```
+
+| Option          | Default | Description                                   |
+|-----------------|---------|-----------------------------------------------|
+| `:in-attribute` | `false` | Decode as an attribute value: a named entity without its `;` is kept when it is followed by `=` or a letter or digit, so `"a=1&copy=2"` stays as it is. |
+
 ### `clean`
 
 ```clj
@@ -224,6 +246,28 @@ An unknown `:safelist` or `:escape-mode` throws an `ex-info` listing the
 valid values. The exact output can differ between jsoup versions, so check
 it against the version you use.
 
+### `valid?`
+
+```clj
+(m/valid? html)
+(m/valid? html opts)
+```
+
+Returns `true` when `clean` would remove nothing from `html` with the same
+safelist. Use it to reject untrusted markup instead of cleaning it.
+
+```clj
+(m/valid? "<p>Hi <b>there</b></p>")                ;; => true
+(m/valid? "<p onclick=\"steal()\">Hi</p>")          ;; => false
+(m/valid? "<section>x</section>" {:add-tags [:section]}) ;; => true
+```
+
+It takes the `:safelist`, `:add-tags`, `:remove-tags`, `:add-attributes`,
+`:remove-attributes` and `:preserve-relative-links` options of `clean`. Like
+`clean`, it checks a fragment of a body, so a full document with `<html>` or
+`<head>` is never valid. There is no base URI, so a relative link such as
+`/a` is only valid with `:preserve-relative-links true`.
+
 ### `select` and `select-one`
 
 ```clj
@@ -263,6 +307,8 @@ searched. An empty or invalid selector throws an exception.
 |---------------------|-----------------------------------------------------------|
 | `(m/text el)`       | The element's text, with entities decoded.                |
 | `(m/attr el k)`     | The value of attribute `k` (string or keyword), or `nil`. |
+| `(m/abs-url el k)`  | Attribute `k` as an absolute URL, resolved against the document's `:base-uri`, or `nil`. |
+| `(m/base-uri el)`   | The base URI used by `abs-url`, or `nil`.                 |
 | `(m/attrs el)`      | All attributes as a map of keyword to string.             |
 | `(m/outer-html el)` | The element's own markup, including its tag.              |
 
@@ -272,6 +318,37 @@ searched. An empty or invalid selector throws an exception.
 
 (m/outer-html (m/select-one doc "a"))
 ;; => "<a href=\"/1\" title=\"one\">One</a>"
+
+(-> (m/parse "<a href=\"/about\">About</a>" {:base-uri "https://example.com/"})
+    (m/select-one "a")
+    (m/abs-url :href))
+;; => "https://example.com/about"
+```
+
+`abs-url` returns `nil` when the attribute is absent, or when it is relative
+and the document has no base URI, like `attr`. jsoup returns `""` in both
+cases, but `""` is truthy in Clojure, so `nil` works with `if-let`, `some->`,
+`or` and `keep`:
+
+```clj
+(keep #(m/abs-url % :href) (m/select doc "a"))   ; only the resolvable links
+(or (m/abs-url img :src) "/default.png")         ; a fallback
+```
+
+It does not check the URL: a `javascript:` link is returned as it is.
+
+`base-uri` returns the `:base-uri` given to `parse` or `parse-fragment`, and
+`nil` when there is none. A `<base href>` tag in the document replaces it.
+For a `File` or a `Path` parsed without `:base-uri`, it is the absolute path
+of the file, which is not a URL, so `abs-url` cannot resolve a link such as
+`/about` against it. Pass `:base-uri` when you need absolute links.
+
+```clj
+(m/base-uri (m/parse "<p>x</p>" {:base-uri "https://example.com/"}))
+;; => "https://example.com/"
+
+(m/base-uri (m/parse "<p>x</p>"))
+;; => nil
 ```
 
 ## Documentation
