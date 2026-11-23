@@ -293,12 +293,6 @@ searched. An empty or invalid selector throws an exception.
 
 (map #(m/attr % :href) (m/select doc "a[href]"))
 ;; => ("/1" "/2")
-
-(m/select doc "table")
-;; => []
-
-(m/select-one doc "table")
-;; => nil
 ```
 
 ### Reading elements
