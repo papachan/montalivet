@@ -2,7 +2,7 @@
 
 This is a history of changes to [montalivet](https://github.com/papachan/montalivet).
 
-#### 0.1.3 - 2026-11-19
+#### 0.1.4 - 2026-11-19
 
 * Added `valid?`, which tells whether an HTML string contains nothing that
   `clean` would remove. It takes the safelist options of `clean`.

@@ -27,7 +27,7 @@ Java interop yourself.
 Add it to your `deps.edn`:
 
 ```clj
-io.github.papachan/montalivet {:mvn/version "0.1.3"}
+io.github.papachan/montalivet {:mvn/version "0.1.4"}
 ```
 
 Install it locally from a clone:

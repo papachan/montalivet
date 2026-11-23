@@ -267,5 +267,5 @@ Returns true when the `html` string contains nothing that [[[`clean`](#io.github
 (version)
 ```
 
-Returns the version of montalivet as a string, e.g. "0.1.3".
+Returns the version of montalivet as a string, e.g. "0.1.4".
 <p><sub><a href="https://github.com/papachan/montalivet/blob/main/src\io\github\papachan\montalivet.clj#L8-L11">Source</a></sub></p>

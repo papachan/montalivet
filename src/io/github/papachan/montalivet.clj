@@ -6,7 +6,7 @@
 (set! *warn-on-reflection* true)
 
 (defn version
-  "Returns the version of montalivet as a string, e.g. \"0.1.3\"."
+  "Returns the version of montalivet as a string, e.g. \"0.1.4\"."
   ^String []
   @impl/version)
 
