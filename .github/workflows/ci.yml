@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          # the Clojure deps end up in ~/.m2, so deps.edn is the cache key
+          cache-dependency-path: deps.edn
+
+      - name: Set up Clojure CLI
+        uses: DeLaGuardo/setup-clojure@13.7.0
+        with:
+          cli: 1.12.7.1681
+
+      - name: Run tests
+        run: clojure -M:test:runner
+
+      - name: Lint
+        run: clojure -M:clj-kondo --lint src test build.clj
+
+      - name: Check formatting
+        run: clojure -M:format-check

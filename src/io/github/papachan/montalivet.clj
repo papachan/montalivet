@@ -6,7 +6,7 @@
 (set! *warn-on-reflection* true)
 
 (defn version
-  "Returns the version of montalivet as a string, e.g. \"0.1.3\"."
+  "Returns the version of montalivet as a string, e.g. \"0.1.4\"."
   ^String []
   @impl/version)
 
@@ -66,6 +66,18 @@
          ^Document$OutputSettings settings (impl/output-settings doc)]
      (impl/escape-html s settings))))
 
+(defn unescape-html
+  "Decodes the HTML entities in `s`: named (`&amp;`, `&copy;`), decimal
+  (`&#66;`) and hexadecimal (`&#x41;`). Unknown entities are left as they
+  are. It reverses `escape-html`.
+
+  Options:
+  - `:in-attribute` boolean, default false. Decodes `s` as an attribute
+    value: a named entity without its `;` is then kept as it is when it is
+    followed by `=` or by a letter or digit, as in the URL `a=1&copy=2`."
+  (^String [s] (unescape-html s {}))
+  (^String [s opts] (impl/unescape-html s opts)))
+
 (defn select
   "Returns a vector of the elements of `doc` that match the CSS selector
   `query`, in document order. `doc` can be a Document or any element, in
@@ -93,6 +105,30 @@
   `k` can be a string or a keyword."
   ^String [^Element el k]
   (impl/attr el (name k)))
+
+(defn abs-url
+  "Returns the value of attribute `k` of `el` as an absolute URL, resolved
+  against the base URI of the document. Returns nil when the attribute is
+  absent, or when it is relative and the document has no base URI, so it
+  works with `if-let`, `some->` and `keep`. jsoup returns \"\" in both
+  cases. `k` can be a string or a keyword.
+
+  The URL is not checked: a `javascript:` link is returned as it is. Use
+  `clean` or `valid?` on untrusted markup."
+  ^String [^Element el k]
+  (impl/abs-url el (name k)))
+
+(defn base-uri
+  "Returns the base URI that `el` (a Document or any element) uses to
+  resolve relative links in `abs-url`, or nil when it has none. jsoup
+  returns \"\" then.
+
+  It is the `:base-uri` given to `parse` or `parse-fragment`, or for a File
+  or a Path without that option, the absolute path of the file. A `<base
+  href>` tag in the document replaces it, resolved against it when it is
+  relative."
+  ^String [^Element el]
+  (impl/base-uri el))
 
 (defn attrs
   "Returns the attributes of `el` as a map of keyword to string."
@@ -125,3 +161,18 @@
   - `:escape-mode` one of :base, :xhtml, :extended."
   (^String [html] (clean html {}))
   (^String [html opts] (impl/clean html opts)))
+
+(defn valid?
+  "Returns true when the `html` string contains nothing that `clean` would
+  remove with the same safelist, so it can be used as it is. Use it to
+  reject untrusted markup instead of cleaning it.
+
+  Like `clean`, it checks a fragment of a body: a full document with
+  `<html>` or `<head>` is never valid.
+
+  Options: `:safelist`, `:add-tags`, `:remove-tags`, `:add-attributes`,
+  `:remove-attributes` and `:preserve-relative-links`, as in `clean`. There
+  is no base URI, so relative links are only valid with
+  `:preserve-relative-links`."
+  ([html] (valid? html {}))
+  ([html opts] (impl/valid? html opts)))

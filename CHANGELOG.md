@@ -2,6 +2,17 @@
 
 This is a history of changes to [montalivet](https://github.com/papachan/montalivet).
 
+#### 0.1.4 - 2026-11-19
+
+* Added `valid?`, which tells whether an HTML string contains nothing that
+  `clean` would remove. It takes the safelist options of `clean`.
+* Added `unescape-html`, which decodes HTML entities, with the
+  `:in-attribute` option.
+* Added `abs-url`, which returns an attribute as an absolute URL, or `nil`
+  when it cannot be resolved.
+* Added `base-uri`, which returns the base URI of a document or element, or
+  `nil` when it has none.
+
 #### 0.1.3 - 2026-11-11
 
 * `parse` now accepts a `java.io.File`, a `java.nio.file.Path` or a

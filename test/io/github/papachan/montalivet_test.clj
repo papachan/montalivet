@@ -58,9 +58,9 @@
       (is (= "<p>café</p><a href=\"/a\">l</a>"
              (montalivet/body-html (montalivet/parse (temp-html html "UTF-8") {:pretty-print false})))))
     (testing ":base-uri resolves relative links"
-      (let [href #(.absUrl (montalivet/select-one % "a") "href")
+      (let [href #(montalivet/abs-url (montalivet/select-one % "a") "href")
             opts {:base-uri "https://example.com/"}]
-        (is (= "" (href (montalivet/parse html))))
+        (is (nil? (href (montalivet/parse html))))
         (is (= "https://example.com/a" (href (montalivet/parse html opts))))
         (is (= "https://example.com/a" (href (montalivet/parse (temp-html html "UTF-8") opts))))
         (is (= "https://example.com/a" (href (montalivet/parse (.toPath (temp-html html "UTF-8")) opts))))
@@ -118,6 +118,23 @@
   (testing "non-ASCII text is kept as is with the default UTF-8 charset"
     (is (= "café" (montalivet/escape-html "café" {:escape-mode :extended})))))
 
+(deftest unescape-html-test
+  (testing "named, decimal and hexadecimal entities are decoded"
+    (is (= "a < b & c" (montalivet/unescape-html "a &lt; b &amp; c")))
+    (is (= "\u00a92024 \u00a0x" (montalivet/unescape-html "&copy;2024 &nbsp;x")))
+    (is (= "AB" (montalivet/unescape-html "&#x41;&#66;"))))
+  (testing "unknown entities and plain text are unchanged"
+    (is (= "&bogus;" (montalivet/unescape-html "&bogus;")))
+    (is (= "hello" (montalivet/unescape-html "hello")))
+    (is (= "" (montalivet/unescape-html ""))))
+  (testing ":in-attribute keeps an entity without ; that is followed by ="
+    (is (= "a=1\u00a9=2" (montalivet/unescape-html "a=1&copy=2")))
+    (is (= "a=1&copy=2" (montalivet/unescape-html "a=1&copy=2" {:in-attribute true}))))
+  (testing "it reverses escape-html"
+    (doseq [s    ["<b>a & b</b>" "1 < 2 > 0" "a\u00a0b \"q\" 'x'" "caf\u00e9"]
+            mode [:base :xhtml :extended]]
+      (is (= s (montalivet/unescape-html (montalivet/escape-html s {:escape-mode mode})))))))
+
 (deftest round-trip-test
   (testing "the original java snippet: parse, no pretty print, escape body"
     (let [doc (montalivet/parse "<p>1 < 2</p>"
@@ -173,8 +190,57 @@
     (testing "attrs returns a keyword map"
       (is (= {:id "a" :class "x y"} (montalivet/attrs div)))
       (is (= {} (montalivet/attrs (montalivet/select-one doc "p")))))
+    (testing "abs-url resolves against the base URI, and gives nil when it cannot"
+      (let [doc               (montalivet/parse (str "<a href=\"/x\">a</a><a>b</a>"
+                                                     "<a href=\"https://o.com/y\">c</a><img src=\"i.png\">")
+                                                {:base-uri "https://example.com/docs/"})
+            [x no-href other] (montalivet/select doc "a")
+            img               (montalivet/select-one doc "img")]
+        (is (= "https://example.com/x" (montalivet/abs-url x :href)))
+        (is (= "https://example.com/x" (montalivet/abs-url x "href")))
+        (is (= "https://o.com/y" (montalivet/abs-url other :href)))
+        (is (= "https://example.com/docs/i.png" (montalivet/abs-url img :src)))
+        (is (nil? (montalivet/abs-url no-href :href)))
+        (is (nil? (montalivet/abs-url x :src)))
+        (is (nil? (montalivet/abs-url a :href)) "relative link and no base URI")
+        (is (= ["https://example.com/x" "https://o.com/y"]
+               (keep #(montalivet/abs-url % :href) (montalivet/select doc "a")))
+            "keep drops the links without a URL")))
     (testing "outer-html includes the element's own tag"
       (is (= "<a href=\"/1\" title=\"one\">One</a>" (montalivet/outer-html a))))))
+
+(deftest base-uri-test
+  (let [html "<p><a href=\"y\">y</a></p>"]
+    (testing "nil when the document has no base URI"
+      (is (nil? (montalivet/base-uri (montalivet/parse html))))
+      (is (nil? (montalivet/base-uri (montalivet/parse-fragment html))))
+      (is (nil? (montalivet/base-uri (montalivet/parse (ByteArrayInputStream. (.getBytes html "UTF-8")))))))
+    (testing "the :base-uri option of parse and parse-fragment"
+      (is (= "https://example.com/"
+             (montalivet/base-uri (montalivet/parse html {:base-uri "https://example.com/"}))))
+      (is (= "https://example.com/f/"
+             (montalivet/base-uri (montalivet/parse-fragment html {:base-uri "https://example.com/f/"})))))
+    (testing "an element has the base URI of its document"
+      (is (= "https://example.com/"
+             (-> (montalivet/parse html {:base-uri "https://example.com/"})
+                 (montalivet/select-one "a")
+                 montalivet/base-uri))))
+    (testing "a File or a Path without :base-uri gives the absolute path of the file"
+      (let [f (temp-html html "UTF-8")]
+        (is (= (.getAbsolutePath f) (montalivet/base-uri (montalivet/parse f))))
+        (is (= (.getAbsolutePath f) (montalivet/base-uri (montalivet/parse (.toPath f)))))
+        (is (= "https://example.com/"
+               (montalivet/base-uri (montalivet/parse f {:base-uri "https://example.com/"})))))))
+  (testing "a <base href> tag replaces it, and abs-url follows it"
+    (let [doc (montalivet/parse (str "<html><head><base href=\"https://b.com/x/\"></head>"
+                                     "<body><a href=\"y\">y</a></body></html>"))]
+      (is (= "https://b.com/x/" (montalivet/base-uri doc)))
+      (is (= "https://b.com/x/y" (montalivet/abs-url (montalivet/select-one doc "a") :href)))))
+  (testing "a relative <base href> is resolved against :base-uri"
+    (is (= "https://example.com/x/"
+           (montalivet/base-uri
+            (montalivet/parse "<html><head><base href=\"/x/\"></head><body></body></html>"
+                              {:base-uri "https://example.com/a/"}))))))
 
 (deftest clean-test
   (testing "scripts and event handlers are removed with the default :basic safelist"
@@ -212,3 +278,30 @@
   (testing "an unknown safelist is rejected"
     (is (thrown? clojure.lang.ExceptionInfo
                  (montalivet/clean "<p>x</p>" {:safelist :nope})))))
+
+(deftest valid?-test
+  (testing "markup allowed by the default :basic safelist is valid"
+    (is (true? (montalivet/valid? "<p>Hi <b>there</b></p>")))
+    (is (true? (montalivet/valid? "<a href=\"https://example.com/\">l</a>")))
+    (is (true? (montalivet/valid? "plain text")))
+    (is (true? (montalivet/valid? ""))))
+  (testing "anything clean would remove is not valid"
+    (is (false? (montalivet/valid? "<p onclick=\"x()\">Hi</p>")))
+    (is (false? (montalivet/valid? "<script>alert(1)</script>")))
+    (is (false? (montalivet/valid? "<a href=\"javascript:alert(1)\">l</a>")))
+    (is (false? (montalivet/valid? "<section>x</section>"))))
+  (testing "a full document is not valid"
+    (is (false? (montalivet/valid? "<html><body><p>x</p></body></html>"))))
+  (testing "relative links are only valid with :preserve-relative-links"
+    (is (false? (montalivet/valid? "<a href=\"/a\">l</a>")))
+    (is (true? (montalivet/valid? "<a href=\"/a\">l</a>" {:preserve-relative-links true}))))
+  (testing "it takes the safelist options of clean"
+    (is (false? (montalivet/valid? "<b>x</b>" {:safelist :none})))
+    (is (true? (montalivet/valid? "<section class=\"c\">x</section>"
+                                  {:add-tags [:section] :add-attributes {:section [:class]}})))
+    (is (false? (montalivet/valid? "<b>x</b>" {:remove-tags [:b]})))
+    (is (thrown? clojure.lang.ExceptionInfo (montalivet/valid? "x" {:safelist :nope}))))
+  (testing "the output of clean is valid with the same options"
+    (let [html "<p onclick=\"x()\">Hi <script>1</script><a href=\"https://e.com/\">l</a></p>"]
+      (is (false? (montalivet/valid? html)))
+      (is (true? (montalivet/valid? (montalivet/clean html)))))))
